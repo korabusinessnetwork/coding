@@ -39,6 +39,20 @@ const VIEW_GROUPS = [
     containerId: "modelConfigSections",
   },
   {
+    id: "categories",
+    label: "Categories",
+    title: "Task Categories",
+    sections: ["profiles"],
+    containerId: "categoriesSections",
+  },
+  {
+    id: "usage",
+    label: "Cost Dashboard",
+    title: "Cost Dashboard",
+    sections: [],
+    containerId: "usageRoot",
+  },
+  {
     id: "messaging",
     label: "Messaging",
     title: "Messaging",
@@ -66,6 +80,16 @@ function viewFromLocation() {
 }
 
 const byId = (id) => document.getElementById(id);
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;",
+  }[character]));
+}
 
 function sourceLabel(source) {
   const labels = {
@@ -215,10 +239,49 @@ async function load({ providersOnly = false } = {}) {
     refreshConnectedAccounts(),
     hydrateModelOptions(),
     providersOnly ? window.CodeSessions.refresh() : window.CodeSessions.initialize(api),
+    refreshUsage(),
   ]);
   if (state.config !== config) return;
   updateDirtyState();
   showMessage("");
+}
+
+async function refreshUsage() {
+  const root = byId("usageRoot");
+  if (!root) return;
+  try {
+    const usage = await api("/admin/api/usage");
+    const money = Number(usage.estimated_cost_usd || 0).toFixed(4);
+    const rows = (usage.models || []).map((row) => `
+      <tr>
+        <td>${escapeHtml(row.model)}</td>
+        <td>${Number(row.requests || 0).toLocaleString()}</td>
+        <td>${Number(row.input_tokens || 0).toLocaleString()}</td>
+        <td>${Number(row.output_tokens || 0).toLocaleString()}</td>
+        <td>$${Number(row.estimated_cost_usd || 0).toFixed(4)}</td>
+      </tr>`).join("");
+    root.innerHTML = `
+      <article class="provider-strip">
+        <div class="section-heading">
+          <div>
+            <h3>Hypothetical paid usage</h3>
+            <p>What the recorded free-model traffic could have cost on a paid OpenRouter route.</p>
+          </div>
+        </div>
+        <div class="field-grid">
+          <div><strong>${Number(usage.requests || 0).toLocaleString()}</strong><br />requests</div>
+          <div><strong>${Number(usage.total_tokens || 0).toLocaleString()}</strong><br />total tokens</div>
+          <div><strong>$${money}</strong><br />estimated cost</div>
+        </div>
+        <p class="message-area">${escapeHtml(usage.pricing_basis || "")}</p>
+      </article>
+      <article class="provider-strip">
+        <div class="section-heading"><h3>By model</h3></div>
+        <div class="table-wrap"><table><thead><tr><th>Model</th><th>Requests</th><th>Input</th><th>Output</th><th>Paid estimate</th></tr></thead><tbody>${rows || "<tr><td colspan=5>No usage recorded yet.</td></tr>"}</tbody></table></div>
+      </article>`;
+  } catch (error) {
+    root.innerHTML = `<p class="message-area error">Could not load usage: ${escapeHtml(error.message)}</p>`;
+  }
 }
 
 function renderNav() {
@@ -248,6 +311,7 @@ function setActiveView(viewId, { scroll = false } = {}) {
   byId("pageTitle").textContent = activeView.title;
   renderStartup();
   if (activeView.id === "code") state.codeCatalogRetry = true;
+  if (activeView.id === "usage") void refreshUsage();
   void refreshStartup();
   const sessionActive = activeView.id === "code";
   document.querySelector(".app-shell").classList.toggle("session-active", sessionActive);
@@ -1380,6 +1444,26 @@ async function loadModelOptions(refresh = false) {
   return result;
 }
 
+async function launchOpenCodeTerminal() {
+  const button = byId("launchOpenCode");
+  const message = byId("opencodeLaunchMessage");
+  button.disabled = true;
+  button.textContent = "Opening…";
+  try {
+    const result = await api("/admin/api/integrations/opencode/launch", { method: "POST" });
+    message.hidden = false;
+    message.className = `message-area ${result.ok ? "ok" : "error"}`;
+    message.textContent = result.message;
+  } catch (error) {
+    message.hidden = false;
+    message.className = "message-area error";
+    message.textContent = `Could not open OpenCode: ${error.message}`;
+  } finally {
+    button.disabled = false;
+    button.textContent = "Open terminal";
+  }
+}
+
 async function refreshModelOptions(button) {
   const original = button.textContent;
   button.dataset.operationBusy = "true";
@@ -1435,6 +1519,7 @@ function showMessage(message, kind = "") {
 }
 
 byId("applyButton").addEventListener("click", () => apply());
+byId("launchOpenCode").addEventListener("click", launchOpenCodeTerminal);
 byId("saveProvider").addEventListener("click", () => apply(state.providerId));
 byId("closeProviderDialog").addEventListener("click", () => byId("providerDialog").close());
 byId("cancelProviderDialog").addEventListener("click", () => byId("providerDialog").close());

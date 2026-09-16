@@ -99,6 +99,7 @@ def admin_page_response() -> HTMLResponse:
 
 @router.get("/admin", include_in_schema=False)
 @router.get("/admin/model_config", include_in_schema=False)
+@router.get("/admin/categories", include_in_schema=False)
 @router.get("/admin/messaging", include_in_schema=False)
 @router.get("/admin/integrations", include_in_schema=False)
 def admin_page(request: Request):
@@ -146,6 +147,15 @@ async def admin_status(
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Vary"] = "Origin"
     return await services.admin.admin_status()
+
+
+@router.post("/admin/api/integrations/opencode/launch")
+async def launch_opencode_terminal(
+    request: Request,
+    services: ApiServices = Depends(get_services),
+):
+    require_loopback_admin(request)
+    return await services.admin.open_opencode_terminal()
 
 
 @router.get("/admin/api/providers/local-status")
@@ -249,6 +259,25 @@ async def models(
 ):
     require_loopback_admin(request)
     return _model_options(services)
+
+
+@router.get("/admin/api/usage")
+async def usage(
+    request: Request,
+    services: ApiServices = Depends(get_services),
+):
+    require_loopback_admin(request)
+    if services.usage is None:
+        return {
+            "requests": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0,
+            "estimated_cost_usd": 0.0,
+            "models": [],
+            "pricing_basis": "Usage tracking is unavailable in this runtime.",
+        }
+    return services.usage.snapshot()
 
 
 @router.get("/admin/api/integrations/claude-vscode")

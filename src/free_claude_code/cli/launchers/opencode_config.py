@@ -20,7 +20,11 @@ class OpenCodeConfig:
 
 
 def build_opencode_config(
-    models: tuple[CatalogModel, ...], *, default_model_id: str, proxy_root_url: str
+    models: tuple[CatalogModel, ...],
+    *,
+    default_model_id: str,
+    proxy_root_url: str,
+    profiles: dict[str, tuple[str, str]] | None = None,
 ) -> OpenCodeConfig:
     """Translate a non-empty FCC model snapshot into OpenCode v1 config."""
 
@@ -30,6 +34,11 @@ def build_opencode_config(
     model_config: JsonObject = {
         model.wire_slug: _model_config(model) for model in models
     }
+    for _, model_id in (profiles or {}).values():
+        model_config.setdefault(
+            model_id,
+            {"name": model_id, "reasoning": True},
+        )
     provider_config: JsonObject = {
         "name": "Free Claude Code",
         "npm": "@ai-sdk/openai",
@@ -40,6 +49,23 @@ def build_opencode_config(
     }
     default_model = f"{OPENCODE_PROVIDER_ID}/{default_model_id}"
 
+    overlay: JsonObject = {
+        "provider": {OPENCODE_PROVIDER_ID: provider_config},
+        "enabled_providers": [OPENCODE_PROVIDER_ID],
+        "disabled_providers": [],
+        "model": default_model,
+        "small_model": default_model,
+    }
+    if profiles:
+        overlay["agent"] = {
+            name: {
+                "description": description,
+                "mode": "primary",
+                "model": f"{OPENCODE_PROVIDER_ID}/{model_id}",
+            }
+            for name, (description, model_id) in profiles.items()
+        }
+
     return OpenCodeConfig(
         file={
             "provider": {
@@ -49,13 +75,7 @@ def build_opencode_config(
                 }
             }
         },
-        overlay={
-            "provider": {OPENCODE_PROVIDER_ID: provider_config},
-            "enabled_providers": [OPENCODE_PROVIDER_ID],
-            "disabled_providers": [],
-            "model": default_model,
-            "small_model": default_model,
-        },
+        overlay=overlay,
     )
 
 

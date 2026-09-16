@@ -1,8 +1,10 @@
 """FastAPI route handlers."""
 
-from collections.abc import Mapping
+import json
+from collections.abc import AsyncIterator, Mapping
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 
 from free_claude_code.application.errors import ApplicationError
@@ -15,7 +17,11 @@ from free_claude_code.core.anthropic import (
     get_token_count,
 )
 from free_claude_code.core.openai_responses import OpenAIResponsesRequest
+from free_claude_code.core.openai_responses.tokens import (
+    estimate_responses_input_tokens,
+)
 from free_claude_code.core.trace import trace_event
+from free_claude_code.runtime.usage_ledger import estimate_output_tokens
 
 from .dependencies import (
     get_services,
@@ -77,6 +83,15 @@ async def _create_messages_response(
             await lease.release()
         raise
     assert lease is not None
+    response = _track_usage(
+        response,
+        services,
+        model=request_data.model,
+        api="messages",
+        input_tokens=get_token_count(
+            request_data.messages, request_data.system, request_data.tools
+        ),
+    )
     return await bind_response_lifetime(response, lease.release)
 
 
@@ -111,7 +126,75 @@ async def _create_responses_response(
             await lease.release()
         raise
     assert lease is not None
+    response = _track_usage(
+        response,
+        services,
+        model=request_data.model,
+        api="responses",
+        input_tokens=estimate_responses_input_tokens(request_data),
+    )
     return await bind_response_lifetime(response, lease.release)
+
+
+def _track_usage(
+    response: object,
+    services: ApiServices,
+    *,
+    model: str,
+    api: str,
+    input_tokens: int,
+) -> object:
+    ledger = services.usage
+    if ledger is None:
+        return response
+    if isinstance(response, JSONResponse):
+        ledger.record(
+            model=model,
+            api=api,
+            input_tokens=input_tokens,
+            output_tokens=estimate_output_tokens(_response_text(response.body)),
+        )
+        return response
+    if isinstance(response, StreamingResponse):
+        response.body_iterator = _track_stream(
+            response.body_iterator,
+            ledger,
+            model=model,
+            api=api,
+            input_tokens=input_tokens,
+        )
+    return response
+
+
+async def _track_stream(
+    source: AsyncIterator[bytes | str],
+    ledger,
+    *,
+    model: str,
+    api: str,
+    input_tokens: int,
+) -> AsyncIterator[bytes | str]:
+    fragments: list[str] = []
+    try:
+        async for chunk in source:
+            text = chunk.decode("utf-8", errors="ignore") if isinstance(chunk, bytes) else chunk
+            fragments.append(text)
+            yield chunk
+    finally:
+        ledger.record(
+            model=model,
+            api=api,
+            input_tokens=input_tokens,
+            output_tokens=estimate_output_tokens("".join(fragments)),
+        )
+
+
+def _response_text(body: bytes) -> str:
+    try:
+        payload = json.loads(body)
+    except (TypeError, ValueError):
+        return body.decode("utf-8", errors="ignore")
+    return json.dumps(payload.get("choices", payload.get("output", payload)))
 
 
 def _probe_response(allow: str) -> Response:

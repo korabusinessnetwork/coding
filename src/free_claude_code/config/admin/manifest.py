@@ -45,6 +45,11 @@ SECTIONS: tuple[ConfigSectionSpec, ...] = (
         "Search discovered provider models or enter a provider/model slug.",
     ),
     ConfigSectionSpec(
+        "profiles",
+        "Task Categories",
+        "Choose a model profile for common coding tasks in OpenCode.",
+    ),
+    ConfigSectionSpec(
         "reasoning",
         "Reasoning",
         "Client reasoning policy and route-specific overrides.",
@@ -136,6 +141,54 @@ _NON_PROVIDER_FIELDS: tuple[ConfigFieldSpec, ...] = (
             "starts. Applies to every client. One request may reach multiple "
             "providers and consume usage at each."
         ),
+    ),
+    ConfigFieldSpec(
+        "MODEL_PROFILE_PLAN",
+        "Plan / Architecture",
+        "profiles",
+        "model",
+        settings_attr="model_profile_plan",
+        description="Used by the OpenCode plan agent for decomposition and architecture.",
+    ),
+    ConfigFieldSpec(
+        "MODEL_PROFILE_FRONTEND",
+        "Frontend / UI",
+        "profiles",
+        "model",
+        settings_attr="model_profile_frontend",
+        description="Used by the OpenCode frontend agent for UI and visual coding.",
+    ),
+    ConfigFieldSpec(
+        "MODEL_PROFILE_BACKEND",
+        "Backend / API",
+        "profiles",
+        "model",
+        settings_attr="model_profile_backend",
+        description="Used by the OpenCode backend agent for APIs and server code.",
+    ),
+    ConfigFieldSpec(
+        "MODEL_PROFILE_DEBUG",
+        "Debugging",
+        "profiles",
+        "model",
+        settings_attr="model_profile_debug",
+        description="Used by the OpenCode debug agent for diagnosis and fixes.",
+    ),
+    ConfigFieldSpec(
+        "MODEL_PROFILE_REVIEW",
+        "Code Review",
+        "profiles",
+        "model",
+        settings_attr="model_profile_review",
+        description="Used by the OpenCode review agent for risks and regressions.",
+    ),
+    ConfigFieldSpec(
+        "MODEL_PROFILE_DOCS",
+        "Documentation",
+        "profiles",
+        "model",
+        settings_attr="model_profile_docs",
+        description="Used by the OpenCode docs agent for technical writing.",
     ),
     ConfigFieldSpec(
         "REASONING_POLICY",

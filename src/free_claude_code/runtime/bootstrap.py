@@ -22,6 +22,7 @@ from free_claude_code.providers.base import BaseProvider, ProviderConfig
 from free_claude_code.providers.github_copilot.auth import CopilotAuthManager
 from free_claude_code.providers.openai_codex.auth import OpenAIAuthManager
 from free_claude_code.providers.runtime.runtime import ProviderRuntime, create_provider
+from free_claude_code.runtime.usage_ledger import UsageLedger
 
 if TYPE_CHECKING:
     from free_claude_code.providers.admission import ProviderAdmissionController
@@ -91,6 +92,7 @@ def build_asgi_app(
         tasks=runtime,
         web_tools=HTTPWebToolsClient(),
         code=code_service,
+        usage=UsageLedger(),
     )
     return RuntimeASGIApp(create_app(services), runtime)
 

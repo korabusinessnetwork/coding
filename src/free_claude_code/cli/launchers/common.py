@@ -55,8 +55,6 @@ def resolve_client_binary(
     display_name: str,
     install_hint: str,
 ) -> str:
-    """Resolve an installed client binary or exit with a user-facing hint."""
-
     client_command = shutil.which(binary_name)
     if client_command is None:
         print(

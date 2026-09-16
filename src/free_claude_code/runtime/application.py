@@ -5,6 +5,7 @@ import importlib
 import inspect
 import logging
 import os
+import subprocess
 import traceback
 import uuid
 from collections.abc import Awaitable, Callable, Mapping
@@ -440,6 +441,25 @@ class ApplicationRuntime:
 
     async def disconnect_codex(self) -> JsonObject:
         return await self._codex_integration(False)
+
+    async def open_opencode_terminal(self) -> JsonObject:
+        """Open a visible local PowerShell running the FCC OpenCode launcher."""
+        if os.name != "nt":
+            return {"ok": False, "message": "Terminal launch is supported on Windows only."}
+        command = (
+            f"Set-Location -LiteralPath {os.getcwd()!r}; "
+            "$env:Path = \"$env:USERPROFILE\\.opencode\\bin;$env:Path\"; "
+            "uv run fcc-opencode"
+        )
+        try:
+            subprocess.Popen(
+                ["powershell.exe", "-NoExit", "-ExecutionPolicy", "Bypass", "-Command", command],
+                creationflags=subprocess.CREATE_NEW_CONSOLE,
+                close_fds=True,
+            )
+        except OSError:
+            return {"ok": False, "message": "Could not open the OpenCode terminal."}
+        return {"ok": True, "message": "OpenCode terminal opened."}
 
     async def _codex_integration(self, connected: bool | None) -> JsonObject:
         wait = InitializationWait()

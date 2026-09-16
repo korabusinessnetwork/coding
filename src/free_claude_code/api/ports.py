@@ -14,6 +14,7 @@ from free_claude_code.application.ports import RequestRuntimePort, TaskControlle
 from free_claude_code.application.web_tools.ports import WebToolsPort
 from free_claude_code.config.admin.state import ConfigInputValue, ValueState
 from free_claude_code.core.json_types import JsonObject
+from free_claude_code.runtime.usage_ledger import UsageLedger
 
 
 class AdminRuntimePort(Protocol):
@@ -40,6 +41,8 @@ class AdminRuntimePort(Protocol):
     async def connect_codex(self) -> JsonObject: ...
 
     async def disconnect_codex(self) -> JsonObject: ...
+
+    async def open_opencode_terminal(self) -> JsonObject: ...
 
     async def pick_folder(self, initial_path: str | None) -> str | None: ...
 
@@ -75,3 +78,4 @@ class ApiServices:
     tasks: TaskController
     web_tools: WebToolsPort
     code: CodeApplicationPort | None = None
+    usage: UsageLedger | None = None

@@ -56,6 +56,18 @@
             ></div>
           </section>
 
+          <section id="view-categories" class="admin-view" data-view="categories" hidden>
+            <div
+              id="categoriesSections"
+              class="form-sections"
+              aria-label="Task category configuration"
+            ></div>
+          </section>
+
+          <section id="view-usage" class="admin-view" data-view="usage" hidden>
+            <div id="usageRoot" class="form-sections" aria-label="Usage and cost dashboard"></div>
+          </section>
+
           <section id="view-messaging" class="admin-view" data-view="messaging" hidden>
             <div
               id="messagingSections"
@@ -111,6 +123,16 @@
               <button id="confirmCodexIntegration" class="primary-button" type="button">Connect</button>
               <p id="codexIntegrationDialogMessage" class="message-area error" role="alert" hidden></p>
             </dialog>
+            <article class="provider-strip integration-card">
+              <div class="section-heading">
+                <div>
+                  <h3>OpenCode terminal</h3>
+                  <p>Open a Windows PowerShell terminal already connected to FCC.</p>
+                </div>
+              </div>
+              <p id="opencodeLaunchMessage" class="message-area" role="status" hidden></p>
+              <button id="launchOpenCode" class="primary-button" type="button">Open terminal</button>
+            </article>
             <article class="provider-strip integration-card">
               <div class="section-heading">
                 <div>
