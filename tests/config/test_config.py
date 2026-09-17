@@ -546,6 +546,7 @@ def test_configured_chat_model_refs_are_unique() -> None:
         "open_router/anthropic/claude-fable",
         "groq/vendor/model-a",
         "lmstudio/vendor/model-b",
+        "gemini/gemini-3.8-flash",
     ]
 
 

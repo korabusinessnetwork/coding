@@ -90,6 +90,10 @@ def target_values_with_updates(
         field = FIELD_BY_KEY.get(key)
         if field is None or is_locked_source(state[key].source):
             continue
+        pooled_value = _credential_pool_update(field.secret, values.get(key), submitted)
+        if pooled_value is not None:
+            values[key] = pooled_value
+            continue
         if field.secret and (
             submitted == MASKED_SECRET
             or (isinstance(submitted, str) and not submitted.strip())
@@ -103,6 +107,32 @@ def target_values_with_updates(
 
     values[FCC_CONFIG_SCHEMA_ENV] = CONFIG_SCHEMA_VERSION
     return normalize_retired_model_settings(values, preserve_empty_overrides=False)
+
+
+def _credential_pool_update(
+    secret: bool, current: str | None, submitted: ConfigInputValue
+) -> str | None:
+    """Apply one masked credential-pool operation without returning secrets."""
+    if not secret or not isinstance(submitted, dict):
+        return None
+    operation = submitted.get("credential_pool")
+    existing = [item.strip() for item in (current or "").split(",") if item.strip()]
+    if operation == "append":
+        value = submitted.get("value")
+        if not isinstance(value, str) or not value.strip():
+            return ",".join(existing)
+        candidate = value.strip()
+        if candidate not in existing:
+            existing.append(candidate)
+    elif operation == "remove":
+        index = submitted.get("index")
+        if not isinstance(index, int) or isinstance(index, bool):
+            return ",".join(existing)
+        if 0 <= index < len(existing):
+            existing.pop(index)
+    else:
+        return ",".join(existing)
+    return ",".join(existing)
 
 
 def pending_restart_fields(active: Settings, prospective: Settings) -> tuple[str, ...]:

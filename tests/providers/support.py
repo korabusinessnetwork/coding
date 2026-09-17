@@ -65,8 +65,10 @@ def make_provider_config(
     """Build a complete resolved config for isolated provider tests."""
 
     return ProviderConfig(
-        api_key=api_key,
-        base_url=base_url,
+        api_keys=tuple(key.strip() for key in api_key.split(",") if key.strip())
+        if api_key
+        else (),
+        base_urls=(base_url,),
         rate_limit=rate_limit,
         rate_window=rate_window,
         max_concurrency=max_concurrency,

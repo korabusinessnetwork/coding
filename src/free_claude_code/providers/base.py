@@ -16,10 +16,11 @@ class ProviderConfig:
 
     Base fields apply to all providers. Provider-specific parameters
     (e.g. NIM temperature, top_p) are passed by the provider constructor.
+    Now supports multiple API keys and endpoints for failover rotation.
     """
 
-    api_key: str | None
-    base_url: str
+    api_keys: tuple[str, ...]
+    base_urls: tuple[str, ...]
     rate_limit: int
     rate_window: int
     max_concurrency: int
@@ -30,12 +31,51 @@ class ProviderConfig:
     log_raw_sse_events: bool
     log_api_error_tracebacks: bool
 
+    @property
+    def api_key(self) -> str | None:
+        """Backward compatibility with single key access."""
+        return self.api_keys[0] if self.api_keys else None
+
+    @property
+    def base_url(self) -> str:
+        """Backward compatibility with single URL access."""
+        return self.base_urls[0]
+
 
 class BaseProvider(ABC):
-    """Base class for all providers. Extend this to add your own."""
+    """Base class for all providers. Extend this to add your own.
+
+    Now supports automatic rotation between multiple API keys and endpoints.
+    """
 
     def __init__(self, config: ProviderConfig):
         self._config = config
+        self._current_key_index = 0
+        self._current_url_index = 0
+        self._last_failure_time = 0.0
+        self._failure_count = 0
+
+    def rotate_key(self) -> None:
+        """Rotate to the next API key."""
+        self._current_key_index = (self._current_key_index + 1) % len(
+            self._config.api_keys
+        )
+
+    def rotate_url(self) -> None:
+        """Rotate to the next base URL."""
+        self._current_url_index = (self._current_url_index + 1) % len(
+            self._config.base_urls
+        )
+
+    def get_current_key(self) -> str | None:
+        """Get the currently active API key."""
+        if not self._config.api_keys:
+            return None
+        return self._config.api_keys[self._current_key_index]
+
+    def get_current_url(self) -> str:
+        """Get the currently active base URL."""
+        return self._config.base_urls[self._current_url_index]
 
     @abstractmethod
     async def cleanup(self) -> None:

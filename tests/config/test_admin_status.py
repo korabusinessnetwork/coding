@@ -49,6 +49,16 @@ def test_remote_status_exposes_ordered_configuration_targets() -> None:
     assert "configuration" not in configured
 
 
+def test_config_response_masks_each_credential_pool_member() -> None:
+    from free_claude_code.config.admin.values import credential_items
+
+    field = FIELD_BY_KEY["GROQ_API_KEY"]
+    assert credential_items(field, "alpha-secret,beta-secret") == [
+        "Key 1 ····cret",
+        "Key 2 ····cret",
+    ]
+
+
 def test_multi_field_status_preserves_catalog_order_and_first_missing_target() -> None:
     status = _provider_status(
         "cloudflare",

@@ -21,6 +21,7 @@ from free_claude_code.providers.admission import (
     ProviderOperationKind,
 )
 from free_claude_code.providers.base import BaseProvider, ProviderConfig
+from free_claude_code.providers.credential_pool import CredentialPool
 from free_claude_code.providers.endpoint_types import EndpointContext
 from free_claude_code.providers.model_listing import (
     extract_openai_model_infos,
@@ -62,6 +63,17 @@ class OpenAIChatProvider(BaseProvider):
         self._provider_name = self._profile.provider_name
         self._api_key = config.api_key
         self._base_url = self._profile.base_url(config.base_url).rstrip("/")
+        self._credential_pool = (
+            CredentialPool(
+                api_keys=config.api_keys,
+                base_urls=tuple(
+                    self._profile.base_url(base_url).rstrip("/")
+                    for base_url in config.base_urls
+                ),
+            )
+            if config.api_keys
+            else None
+        )
         self._admission = admission
         self._owns_client = client is None
         self._client = client or create_chat_client(
@@ -219,8 +231,8 @@ class OpenAIChatProvider(BaseProvider):
             request_id=request_id,
             response_model=response_model,
             reasoning=reasoning,
-            endpoint_context=endpoint_context,
             model_info=model_info,
+            endpoint_context=endpoint_context or self._credential_pool,
         )
 
     def stream_responses(
@@ -240,5 +252,5 @@ class OpenAIChatProvider(BaseProvider):
             request_id=request_id,
             response_model=response_model,
             reasoning=reasoning,
-            endpoint_context=endpoint_context,
+            endpoint_context=endpoint_context or self._credential_pool,
         )

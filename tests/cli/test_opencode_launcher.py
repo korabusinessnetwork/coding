@@ -112,6 +112,23 @@ def test_opencode_config_rejects_empty_model_catalog() -> None:
         )
 
 
+def test_opencode_config_includes_automatic_task_agent() -> None:
+    config = build_opencode_config(
+        (CatalogModel("provider/model", "provider/model", "Model", True),),
+        default_model_id="provider/model",
+        proxy_root_url="http://127.0.0.1:9191",
+        profiles={"auto": ("Automatic general task execution", "provider/model")},
+    )
+
+    assert config.overlay["agent"] == {
+        "auto": {
+            "description": "Automatic general task execution",
+            "mode": "primary",
+            "model": "free-claude-code/provider/model",
+        }
+    }
+
+
 def test_opencode_child_receives_private_catalog_and_overlay(launch_capture) -> None:
     from tests.cli.test_launcher_workflow import launch
 

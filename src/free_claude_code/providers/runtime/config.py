@@ -53,11 +53,26 @@ def build_provider_config(
     descriptor: ProviderDescriptor, settings: Settings
 ) -> ProviderConfig:
     """Build shared provider configuration for one provider descriptor."""
+    # Handle multiple credentials (comma separated)
     credential = provider_credential(descriptor, settings)
     require_provider_credential(descriptor, credential)
+
+    # Split multiple API keys
+    api_keys = (
+        tuple(key.strip() for key in (credential or "").split(",") if key.strip())
+        if credential
+        else ()
+    )
+
+    # Handle multiple base URLs (comma separated)
     base_url = string_setting(settings, descriptor.base_url_attr)
-    resolved_base_url = base_url or descriptor.default_base_url
-    if not resolved_base_url:
+    resolved_base_urls = (
+        tuple(url.strip() for url in base_url.split(",") if url.strip())
+        if base_url
+        else (descriptor.default_base_url,)
+    )
+
+    if not any(resolved_base_urls):
         if descriptor.base_url_attr is None:
             raise AssertionError(
                 f"Provider {descriptor.provider_id!r} has no base URL owner."
@@ -67,6 +82,7 @@ def build_provider_config(
         raise ApplicationUnavailableError(
             f"{env_name} is not set. Add it in the Admin UI."
         )
+
     for attr in descriptor.required_settings_attrs:
         if string_setting(settings, attr) is not None:
             continue
@@ -75,10 +91,12 @@ def build_provider_config(
         raise ApplicationUnavailableError(
             f"{env_name} is not set. Add it in the Admin UI."
         )
+
     proxy = string_setting(settings, descriptor.proxy_attr)
+
     return ProviderConfig(
-        api_key=credential,
-        base_url=resolved_base_url,
+        api_keys=api_keys,
+        base_urls=resolved_base_urls,
         rate_limit=settings.provider_rate_limit,
         rate_window=settings.provider_rate_window,
         max_concurrency=settings.provider_max_concurrency,

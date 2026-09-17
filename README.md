@@ -187,6 +187,54 @@ Optional: add an ordered **Fallback Models** list under **Model Config**. It
 applies to every connected client. A failed request may reach and consume usage
 from more than one provider before succeeding.
 
+### Authorized credential pools
+
+For OpenAI-compatible providers, a provider API-key field accepts a comma-separated
+list of credentials from accounts you are authorized to use. FCC round-robins new
+requests across that pool. Before output starts, a `429` or upstream `5xx` retries
+the next configured credential; authentication and permission failures do not
+rotate. Use this only where the provider's terms and your account agreements allow
+the configured capacity.
+
+### Recommended no-cost coding preset
+
+Configure the credentials shown below, then set this order in **Model Config**.
+It favors strong coding/reasoning models with published free capacity; the final
+local fallback has no provider quota but requires a compatible model installed.
+
+```dotenv
+# Configure only providers you actually use. Never commit these credentials.
+GEMINI_API_KEY=your-gemini-key
+NVIDIA_NIM_API_KEY=your-nvidia-nim-key
+GROQ_API_KEY=your-groq-key
+OPENROUTER_API_KEY=your-openrouter-key
+
+MODEL=gemini/gemini-3.8-flash
+MODEL_FALLBACKS=nvidia_nim/z-ai/glm-5.3-flash,groq/openai/gpt-oss-120b,open_router/z-ai/glm-5.2:free
+```
+
+| Priority | Provider/model | Why it is in the chain |
+| --- | --- | --- |
+| 1 | Gemini `gemini-3.8-flash` | Main coding and agent model, when free quota is available in AI Studio. |
+| 2 | NVIDIA NIM `z-ai/glm-5.3-flash` | Coding/reasoning fallback selected from the models available to the configured NIM key. |
+| 3 | Groq `openai/gpt-oss-120b` | Fast coding/reasoning fallback with a published free-tier quota. |
+| 4 | OpenRouter `z-ai/glm-5.2:free` | Last-resort free model; its free-tier request quota is lower and model availability can change. |
+
+Free tiers are rate-limited and may change. Confirm the limits displayed in each
+provider console and use paid capacity when a workload needs a guarantee.
+
+The OpenCode task-category defaults use this same preset:
+
+| Category | Default model |
+| --- | --- |
+| Auto | `gemini/gemini-3.8-flash` |
+| Plan / Architecture | `gemini/gemini-3.8-flash` |
+| Frontend / UI | `gemini/gemini-3.8-flash` |
+| Backend / API | `gemini/gemini-3.8-flash` |
+| Debugging | `gemini/gemini-3.8-flash` |
+| Code Review | `gemini/gemini-3.8-flash` |
+| Documentation | `gemini/gemini-3.8-flash` |
+
 <details>
 <summary><strong>Provider catalog</strong></summary>
 
@@ -211,7 +259,7 @@ from more than one provider before succeeding.
 | [ZenMux](https://zenmux.ai/platform/pay-as-you-go) | `ZENMUX_API_KEY` | `zenmux/deepseek/deepseek-v4-flash-free` |
 | [W&B Inference](https://wandb.ai/settings) | `WANDB_API_KEY` | `wandb/openai/gpt-oss-20b` |
 | [Azure OpenAI](https://learn.microsoft.com/azure/foundry/openai/how-to/chatgpt) | `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_BASE_URL` | `azure_openai/<deployment-name>` |
-| [Google AI Studio (Gemini)](https://aistudio.google.com/apikey) | `GEMINI_API_KEY` | `gemini/models/gemini-3.1-flash-lite` |
+| [Google AI Studio (Gemini)](https://aistudio.google.com/apikey) | `GEMINI_API_KEY` | `gemini/gemini-3.8-flash` |
 | [Google Vertex AI](https://cloud.google.com/vertex-ai/generative-ai/docs/start/openai) | `VERTEX_PROJECT_ID` + ADC | `vertex/google/gemini-3.5-flash` |
 | [DeepSeek](https://platform.deepseek.com/api_keys) | `DEEPSEEK_API_KEY` | `deepseek/deepseek-chat` |
 | [Mistral La Plateforme](https://console.mistral.ai/) | `MISTRAL_API_KEY` | `mistral/devstral-small-latest` |

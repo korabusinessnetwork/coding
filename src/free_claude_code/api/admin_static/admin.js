@@ -876,7 +876,11 @@ function renderField(field) {
   }
 
   let control = input;
-  if (field.type === "model" || field.type === "optional_model") {
+  if (field.secret && Array.isArray(field.credential_items)) {
+    const editor = new CredentialPoolEditor(input, field);
+    label.htmlFor = editor.inputId;
+    control = editor.element;
+  } else if (field.type === "model" || field.type === "optional_model") {
     control = createModelCombobox(input, field).element;
   } else if (field.type === "model_list") {
     const editor = new ModelListEditor(input, field);
@@ -906,6 +910,73 @@ function renderField(field) {
     wrapper.appendChild(description);
   }
   return wrapper;
+}
+
+class CredentialPoolEditor {
+  constructor(input, field) {
+    this.input = input;
+    this.field = field;
+    this.items = [...field.credential_items];
+    this.inputId = `field-${field.key}-add`;
+    this.element = document.createElement("div");
+    this.element.className = "credential-pool-editor";
+    this.rows = document.createElement("div");
+    this.rows.className = "credential-pool-rows";
+    const addRow = document.createElement("div");
+    addRow.className = "credential-pool-add";
+    this.addInput = window.FccFormControls.configure(document.createElement("input"));
+    this.addInput.id = this.inputId;
+    this.addInput.type = "password";
+    this.addInput.placeholder = "Paste one API key";
+    this.addInput.autocomplete = "off";
+    this.addInput.disabled = field.locked;
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "secondary-button";
+    add.textContent = "Add key";
+    add.disabled = field.locked;
+    add.addEventListener("click", () => this.append());
+    addRow.append(this.addInput, add);
+    this.element.append(input, this.rows, addRow);
+    this.render();
+  }
+  append() {
+    const value = this.addInput.value.trim();
+    if (!value) return;
+    this.input.dataset.credentialPool = JSON.stringify({ credential_pool: "append", value });
+    this.input.value = "pending";
+    this.addInput.value = "";
+    updateDirtyState();
+  }
+  remove(index) {
+    this.input.dataset.credentialPool = JSON.stringify({ credential_pool: "remove", index });
+    this.input.value = "pending";
+    updateDirtyState();
+  }
+  render() {
+    this.rows.replaceChildren();
+    if (!this.items.length) {
+      const empty = document.createElement("span");
+      empty.className = "field-description";
+      empty.textContent = "No API keys configured.";
+      this.rows.appendChild(empty);
+      return;
+    }
+    this.items.forEach((label, index) => {
+      const row = document.createElement("div");
+      row.className = "credential-pool-row";
+      const text = document.createElement("code");
+      text.textContent = label;
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "ghost-button";
+      remove.textContent = "Remove";
+      remove.disabled = this.field.locked;
+      remove.addEventListener("click", () => this.remove(index));
+      row.append(text, remove);
+      this.rows.appendChild(row);
+    });
+  }
 }
 
 function inputForField(field) {
@@ -1114,6 +1185,7 @@ function option(value, label) {
 }
 
 function readFieldValue(input) {
+  if (input.dataset.credentialPool) return JSON.parse(input.dataset.credentialPool);
   if (input.type === "checkbox") return input.checked ? "true" : "false";
   if (input.dataset.remove === "true") return null;
   if (

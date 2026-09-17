@@ -104,7 +104,7 @@ class CloudflareProvider(OpenAIChatProvider):
             ),
         )
         super().__init__(
-            replace(config, base_url=base_url),
+            replace(config, base_urls=(base_url,)),
             behavior=CloudflareChatBehavior(_PROFILE),
             admission=admission,
         )

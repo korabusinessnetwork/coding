@@ -31,11 +31,24 @@ def _configure(
         default_model_id=catalog.default_model_id,
         proxy_root_url=ctx.proxy_root_url,
         profiles={
+            "auto": (
+                "Automatic general task execution",
+                ctx.settings.model_profile_auto,
+            ),
             "plan": ("Plan and architecture", ctx.settings.model_profile_plan),
-            "frontend": ("Frontend and UI implementation", ctx.settings.model_profile_frontend),
-            "backend": ("Backend and API implementation", ctx.settings.model_profile_backend),
+            "frontend": (
+                "Frontend and UI implementation",
+                ctx.settings.model_profile_frontend,
+            ),
+            "backend": (
+                "Backend and API implementation",
+                ctx.settings.model_profile_backend,
+            ),
             "debug": ("Debugging and diagnosis", ctx.settings.model_profile_debug),
-            "review": ("Code review and risk analysis", ctx.settings.model_profile_review),
+            "review": (
+                "Code review and risk analysis",
+                ctx.settings.model_profile_review,
+            ),
             "docs": ("Technical documentation", ctx.settings.model_profile_docs),
         },
     )

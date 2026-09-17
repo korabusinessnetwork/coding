@@ -67,6 +67,7 @@ class ChatModelConfig(Protocol):
     model_sonnet: str | None
     model_haiku: str | None
     model_fallbacks: tuple[str, ...] | None
+    model_profile_auto: str
 
 
 def split_provider_model_ref(model_ref: str) -> tuple[str, str]:
@@ -104,6 +105,13 @@ def configured_chat_model_refs(
             settings.model_sonnet,
             settings.model_haiku,
             *(settings.model_fallbacks or ()),
+            getattr(settings, "model_profile_auto", None),
+            getattr(settings, "model_profile_plan", None),
+            getattr(settings, "model_profile_frontend", None),
+            getattr(settings, "model_profile_backend", None),
+            getattr(settings, "model_profile_debug", None),
+            getattr(settings, "model_profile_review", None),
+            getattr(settings, "model_profile_docs", None),
         )
         if model_ref is not None
     )

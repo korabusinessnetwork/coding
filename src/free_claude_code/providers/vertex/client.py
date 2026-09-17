@@ -69,7 +69,7 @@ class VertexProvider(GoogleOpenAIProvider):
             ),
         )
         super().__init__(
-            replace(config, base_url=base_url),
+            replace(config, base_urls=(base_url,)),
             profile=_PROFILE,
             admission=admission,
             api_key_provider=self._access_token_provider,

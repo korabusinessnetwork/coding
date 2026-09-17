@@ -363,28 +363,32 @@ class Settings(BaseModel):
         default=None,
         validation_alias="MODEL_FALLBACKS",
     )
+    model_profile_auto: NonEmptyString = Field(
+        default="gemini/gemini-3.8-flash",
+        validation_alias="MODEL_PROFILE_AUTO",
+    )
     model_profile_plan: NonEmptyString = Field(
-        default="groq/llama-3.3-70b-versatile",
+        default="gemini/gemini-3.8-flash",
         validation_alias="MODEL_PROFILE_PLAN",
     )
     model_profile_frontend: NonEmptyString = Field(
-        default="groq/llama-3.3-70b-versatile",
+        default="gemini/gemini-3.8-flash",
         validation_alias="MODEL_PROFILE_FRONTEND",
     )
     model_profile_backend: NonEmptyString = Field(
-        default="groq/llama-3.3-70b-versatile",
+        default="gemini/gemini-3.8-flash",
         validation_alias="MODEL_PROFILE_BACKEND",
     )
     model_profile_debug: NonEmptyString = Field(
-        default="groq/llama-3.3-70b-versatile",
+        default="gemini/gemini-3.8-flash",
         validation_alias="MODEL_PROFILE_DEBUG",
     )
     model_profile_review: NonEmptyString = Field(
-        default="groq/llama-3.3-70b-versatile",
+        default="gemini/gemini-3.8-flash",
         validation_alias="MODEL_PROFILE_REVIEW",
     )
     model_profile_docs: NonEmptyString = Field(
-        default="groq/llama-3.3-70b-versatile",
+        default="gemini/gemini-3.8-flash",
         validation_alias="MODEL_PROFILE_DOCS",
     )
 

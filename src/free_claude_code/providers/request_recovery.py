@@ -77,12 +77,28 @@ class RequestRecovery:
             return body
         if operation_kind is ProviderOperationKind.GENERATION and self._committed:
             return None
+        if (
+            self._endpoint is not None
+            and _is_pool_failover_error(error)
+            and await self._authorize(error, attempt)
+        ):
+            self._endpoint.request_refresh()
+            return body
         # A separately buffered continuation/repair body can still be corrected
         # at creation, while authentication follows the original public stream.
         corrected = propose_correction()
         if corrected is not None and await self._authorize(error, attempt):
             return corrected
         return None
+
+
+def _is_pool_failover_error(error: Exception) -> bool:
+    """Allow a new pool member only for uncommitted capacity failures."""
+    status = getattr(error, "status_code", None)
+    if not isinstance(status, int):
+        response = getattr(error, "response", None)
+        status = getattr(response, "status_code", None)
+    return status == 429 or (isinstance(status, int) and 500 <= status <= 599)
 
 
 class RequestCorrections:

@@ -359,6 +359,11 @@ button.startup-busy::before,
 .provider-dialog .section-heading { display: flex; justify-content: space-between; }
 .provider-dialog .section-heading h3 { margin: 0; }
 .provider-dialog .field-grid { grid-template-columns: minmax(0, 1fr); }
+.credential-pool-editor { display: grid; gap: 8px; }
+.credential-pool-rows { display: grid; gap: 6px; }
+.credential-pool-row, .credential-pool-add { display: flex; align-items: center; gap: 8px; }
+.credential-pool-row { justify-content: space-between; }
+.credential-pool-add input { min-width: 0; flex: 1; }
 .provider-dialog .field.advanced-field { display: flex; }
 .provider-dialog .provider-actions:not(:empty),
 .provider-dialog .provider-check-result:not([hidden]) { margin-bottom: 20px; }

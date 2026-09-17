@@ -44,3 +44,34 @@ def test_process_locked_key_is_not_a_change(monkeypatch):
     assert prepared.changed_keys == ()
     assert prepared.settings is not None
     assert prepared.settings.groq_api_key == "process-key"
+
+
+def test_credential_pool_adds_and_removes_one_key_without_exposing_the_pool(
+    monkeypatch,
+):
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    store = ManagedConfigStore()
+    store.initialize()
+    active = store.read().settings
+    initial = prepare_admin_update(
+        {"GROQ_API_KEY": "first-key,second-key"}, store.read(), active
+    )
+    assert initial.valid
+    store.commit(initial.target_values)
+
+    appended = prepare_admin_update(
+        {"GROQ_API_KEY": {"credential_pool": "append", "value": "third-key"}},
+        store.read(),
+        active,
+    )
+    assert appended.valid and appended.settings is not None
+    assert appended.settings.groq_api_key == "first-key,second-key,third-key"
+    store.commit(appended.target_values)
+
+    removed = prepare_admin_update(
+        {"GROQ_API_KEY": {"credential_pool": "remove", "index": 1}},
+        store.read(),
+        active,
+    )
+    assert removed.valid and removed.settings is not None
+    assert removed.settings.groq_api_key == "first-key,third-key"

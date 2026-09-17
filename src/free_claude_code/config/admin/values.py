@@ -35,6 +35,14 @@ def display_value(field: ConfigFieldSpec, value: str | None) -> str | None:
     return value
 
 
+def credential_items(field: ConfigFieldSpec, value: str | None) -> list[str]:
+    """Return non-secret labels for an editable provider credential pool."""
+    if not field.secret or value is None:
+        return []
+    keys = [item.strip() for item in value.split(",") if item.strip()]
+    return [f"Key {index + 1} ····{key[-4:]}" for index, key in enumerate(keys)]
+
+
 def is_locked_source(source: str | ConfigSource) -> bool:
     """Return whether process ownership makes an Admin field read-only."""
 
@@ -96,6 +104,7 @@ def load_config_response(snapshot: ManagedConfigSnapshot) -> JsonObject:
                     for option in field.options
                 ],
                 "description": field.description,
+                "credential_items": credential_items(field, raw_value),
             }
         )
 

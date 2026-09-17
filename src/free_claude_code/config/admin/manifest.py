@@ -143,6 +143,17 @@ _NON_PROVIDER_FIELDS: tuple[ConfigFieldSpec, ...] = (
         ),
     ),
     ConfigFieldSpec(
+        "MODEL_PROFILE_AUTO",
+        "Auto",
+        "profiles",
+        "model",
+        settings_attr="model_profile_auto",
+        description=(
+            "General OpenCode agent for automatic task execution. Uses the selected "
+            "model and its configured provider fallbacks."
+        ),
+    ),
+    ConfigFieldSpec(
         "MODEL_PROFILE_PLAN",
         "Plan / Architecture",
         "profiles",

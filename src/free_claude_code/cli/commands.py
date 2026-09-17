@@ -270,6 +270,9 @@ class ServerSupervisor:
             host=settings.host,
             port=settings.port,
             log_level="debug",
+            # The Admin UI polls local endpoints; access logs would otherwise
+            # drown out the interactive coding-agent terminal.
+            access_log=False,
             log_config=(
                 uvicorn.config.LOGGING_CONFIG if self._console_logging else None
             ),
